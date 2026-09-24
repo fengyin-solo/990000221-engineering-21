@@ -159,6 +159,45 @@ npm run build
 
 The built files will be in `frontend/dist/`
 
+## Article List Snapshots (Local Development)
+
+A read-only dev tool captures the article list states shown by the UI
+(**文章集合** collection, **当前位置** pagination position, and **空结果** empty
+result) in one run and emits comparable summaries. It only sends `GET` requests,
+so it never changes article data or the runtime behavior of the list,
+pagination, or tag filter.
+
+With the backend running (`http://localhost:3001` by default):
+
+```bash
+cd frontend
+npm run snapshot:articles
+```
+
+Outputs are written to `frontend/dev-snapshots/articles/` (git-ignored):
+
+| File | Purpose |
+|------|---------|
+| `summary.json` | Deterministic, comparable summary: article ids/titles, pagination, tags, and per-stage + overall `digest` (no timestamps). |
+| `latest.json` | Full responses for inspection. |
+| `failed.json` | Written only on failure; records the failed stage(s). The previous good `summary.json`/`latest.json` is kept untouched. |
+
+- **Repeat runs overwrite** the previous snapshot. Identical data produces an
+  identical `digest`, so summaries can be diffed across builds.
+- **Service unavailable / any stage error**: the build exits non-zero, writes
+  `failed.json`, and leaves the last good snapshot in place; a later successful
+  run clears `failed.json`.
+
+Compare against a saved baseline (exits `0` on match, `2` on difference):
+
+```bash
+npm run snapshot:articles -- --baseline path/to/summary.json
+```
+
+Options: `--base <url>`, `--out <dir>`, `--baseline <file>`, `--timeout <ms>`
+(env: `SNAPSHOT_API_BASE`, `SNAPSHOT_OUT_DIR`, `SNAPSHOT_BASELINE`,
+`SNAPSHOT_TIMEOUT`).
+
 ## License
 
 MIT
